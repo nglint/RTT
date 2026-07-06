@@ -87,7 +87,7 @@ int main() {
                 f = 0;
             }
 
-            int y = 100;
+            int y = 200;
             for (int i = 10, l = 1; i < y * 8; i++) {
                 if (i % y == 0) l++;
                 int p = ma - i;
