@@ -37,6 +37,7 @@ int main() {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(8888);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
+    struct sockaddr_in clientAddr;
 
     if (bind(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         perror("bind");
@@ -44,23 +45,25 @@ int main() {
         return 1;
     }
 
-    char *buffer = (char*)malloc(10485760 * sizeof(char));
-    char *flag = (char*)malloc(10485760 * sizeof(char));
-    memset(flag, 0, 10485760);
-
     int recvBufferSize = 100 * 1024 * 1024;
     setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &recvBufferSize, sizeof(recvBufferSize));
 
-    char packet[1472];
-    unsigned short *seq = (unsigned short*)packet;
-    struct sockaddr_in clientAddr;
-    socklen_t addrLen = sizeof(clientAddr);
-    int c = 0, fi = 0;
-    int bytesAvailable = 0;
-    bool f = true;
-    short ma = 0, m[4], u = 0;
+    char *buffer = (char*)malloc(40485760 * sizeof(char));
+    char *flag = (char*)malloc(40485760 * sizeof(char));
+    memset(flag, 0, 40485760);
 
-    // Wait until data is available (Linux uses ioctl with FIONREAD)
+    char packet[10472];
+    unsigned short *seq = (unsigned short*)packet;
+
+    socklen_t addrLen = sizeof(clientAddr);
+    int c = 0, fi = 0, sequ = 20000;
+    int bytesAvailable = 0;
+    bool f = 1;
+    int gone = 0;
+    short ma = 0, m[4], u = 0;
+    unsigned error;
+
+    // Wait until data is available - Linux uses ioctl with FIONREAD
     while (bytesAvailable == 0) {
         ioctl(sock, FIONREAD, &bytesAvailable);
     }
@@ -79,15 +82,17 @@ int main() {
             flag[seq[0]] = 10;
             c++;
             int g = 0;
-            if (ma > 3000) {
-                f = false;
+            
+            if (ma > 0.4 * sequ) {
+                f = 0;
             }
 
-            for (int i = 10, l = 1; i < 1800 && g * 2 < 1452; i++) {
-                if (i % 600 == 0) l++;
+            int y = 100;
+            for (int i = 10, l = 1; i < y * 8; i++) {
+                if (i % y == 0) l++;
                 int p = ma - i;
                 if (p < 0) {
-                    if (f == 0) p += 6888;
+                    if (f == 0) p += sequ;
                     else break;
                 }
                 if (flag[p] < l) {
@@ -98,6 +103,7 @@ int main() {
             }
 
             auto e = chrono::steady_clock::now();
+
             if (g != 0) {
                 sendto(sock, packet, g * 2, 0,
                        (struct sockaddr*)&clientAddr, sizeof(clientAddr));
@@ -105,18 +111,22 @@ int main() {
             }
 
             if (chrono::duration_cast<chrono::microseconds>(e - s).count() >= 1000000) {
-                cout << "lose: " << fi << " rec:" << c << "\n";
+                cout << "lose: " << gone << "+" << fi << " seq= " << seq[0] << "\n";
                 c = 0;
                 fi = 0;
                 s = chrono::steady_clock::now();
+                gone = 0;
             }
             u++;
+            
             if (f == 0) {
-                int p = ma - 3000;
-                if (p < 0) p += 6888;
-                for (int i = p, n = 0; n < 3000; n++, i--) {
-                    if (i < 0) i += 6888;
-                    flag[i] = 0;
+                int p = ma - (sequ * 0.4);
+                if (p < 0) p += sequ;
+                for (int i = p, n = 1; n < sequ * 0.4; n++, i--) {
+                    if (i < 0) i += sequ;
+                    if (n > sequ) n %= sequ;
+                    if (flag[i] != 10 && flag[i] != 0) gone++, flag[i] = 0;
+                    flag[ma + n] = 0;
                 }
             }
         }
