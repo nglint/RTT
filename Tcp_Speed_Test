@@ -1,0 +1,56 @@
+#include <iostream>
+#include <chrono>
+#include <cstring>
+
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+using namespace std;
+
+int main()
+{
+    int listenSock = socket(AF_INET, SOCK_STREAM, 0);
+
+    int opt = 1;
+    setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    int size = 8 * 1024 * 1024;
+    setsockopt(listenSock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+
+    sockaddr_in addr{};
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8888);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    bind(listenSock, (sockaddr*)&addr, sizeof(addr));
+
+    listen(listenSock, 1);
+
+    cout << "Waiting..." << endl;
+
+    int sock = accept(listenSock, nullptr, nullptr);
+
+    cout << "Connected." << endl;
+
+    const int BUF_SIZE = 64 * 1024;
+
+    char buffer[BUF_SIZE];
+
+    uint64_t bytes = 0;
+
+    auto start = chrono::steady_clock::now();
+
+    while(true)
+    {
+        int n = recv(sock, buffer, BUF_SIZE, 0);
+
+      
+    }
+
+    close(sock);
+    close(listenSock);
+
+    return 0;
+}
