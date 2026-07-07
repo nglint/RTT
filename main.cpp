@@ -55,6 +55,8 @@ int main() {
     char packet[10472];
     unsigned short *seq = (unsigned short*)packet;
 
+    int y = 100, level = 6;
+    int fc[level] = {0};
     socklen_t addrLen = sizeof(clientAddr);
     int c = 0, fi = 0, sequ = 20000;
     int bytesAvailable = 0;
@@ -82,13 +84,12 @@ int main() {
             flag[seq[0]] = 10;
             c++;
             int g = 0;
-            
+
             if (ma > 0.4 * sequ) {
                 f = 0;
             }
 
-            int y = 200;
-            for (int i = 10, l = 1; i < y * 8; i++) {
+            for (int i = 10, l = 1; i < y * level; i++) {
                 if (i % y == 0) l++;
                 int p = ma - i;
                 if (p < 0) {
@@ -96,6 +97,9 @@ int main() {
                     else break;
                 }
                 if (flag[p] < l) {
+                    for (int i = 0; i < level; i++) {
+                        if (flag[p] == i) fc[i]++;
+                    }
                     flag[p] = l;
                     memcpy(&packet[g * 2], &p, sizeof(short));
                     g++;
@@ -116,9 +120,15 @@ int main() {
                 fi = 0;
                 s = chrono::steady_clock::now();
                 gone = 0;
+
+                for (int i = 0; i < level; i++) {
+                    cout << "lose at level " << i << " = " << fc[i] << "  ";
+                    fc[i] = 0;
+                }
+                cout << "\n";
             }
             u++;
-            
+
             if (f == 0) {
                 int p = ma - (sequ * 0.4);
                 if (p < 0) p += sequ;
